@@ -1,0 +1,124 @@
+import pygame
+import random
+
+# Initialize pygame
+pygame.init()
+
+# Screen dimensions
+SCREEN_WIDTH = 400
+SCREEN_HEIGHT = 400
+
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+GREY = (160, 160, 160)
+
+# Set up the display
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Sliding Puzzle Game")
+
+# Clock to control the frame rate
+clock = pygame.time.Clock()
+
+# Tile dimensions
+TILE_SIZE = SCREEN_WIDTH // 4
+GRID_SIZE = 4
+
+# Font for numbers
+font = pygame.font.SysFont(None, 80)
+
+# Create the puzzle board
+def create_board():
+    board = [[(i * GRID_SIZE + j + 1) % (GRID_SIZE * GRID_SIZE) for j in range(GRID_SIZE)] for i in range(GRID_SIZE)]
+    return board
+
+# Shuffle the puzzle board
+def shuffle_board(board):
+    empty_pos = (GRID_SIZE - 1, GRID_SIZE - 1)
+    for _ in range(1000):
+        move_tile(board, empty_pos)
+        empty_pos = find_empty_tile(board)
+    return board
+
+# Find the empty tile
+def find_empty_tile(board):
+    for i in range(GRID_SIZE):
+        for j in range(GRID_SIZE):
+            if board[i][j] == 0:
+                return (i, j)
+
+# Move a tile
+def move_tile(board, empty_pos):
+    i, j = empty_pos
+    neighbors = []
+    if i > 0:
+        neighbors.append((i - 1, j))
+    if i < GRID_SIZE - 1:
+        neighbors.append((i + 1, j))
+    if j > 0:
+        neighbors.append((i, j - 1))
+    if j < GRID_SIZE - 1:
+        neighbors.append((i, j + 1))
+    move = random.choice(neighbors)
+    board[i][j], board[move[0]][move[1]] = board[move[0]][move[1]], board[i][j]
+
+# Draw the board
+def draw_board(board):
+    screen.fill(BLACK)
+    for i in range(GRID_SIZE):
+        for j in range(GRID_SIZE):
+            if board[i][j] != 0:
+                pygame.draw.rect(screen, GREY, (j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+                num_text = font.render(str(board[i][j]), True, BLACK)
+                screen.blit(num_text, (j * TILE_SIZE + TILE_SIZE // 2 - num_text.get_width() // 2,
+                                       i * TILE_SIZE + TILE_SIZE // 2 - num_text.get_height() // 2))
+    pygame.display.flip()
+
+# Check if the puzzle is solved
+def is_solved(board):
+    n = 1
+    for i in range(GRID_SIZE):
+        for j in range(GRID_SIZE):
+            if board[i][j] != n % (GRID_SIZE * GRID_SIZE):
+                return False
+            n += 1
+    return True
+
+# Main game loop
+def game_loop():
+    board = create_board()
+    shuffle_board(board)
+    empty_pos = find_empty_tile(board)
+    
+    run = True
+    while run:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+            elif event.type == pygame.KEYDOWN:
+                i, j = empty_pos
+                if event.key == pygame.K_LEFT and j < GRID_SIZE - 1:
+                    board[i][j], board[i][j + 1] = board[i][j + 1], board[i][j]
+                    empty_pos = (i, j + 1)
+                elif event.key == pygame.K_RIGHT and j > 0:
+                    board[i][j], board[i][j - 1] = board[i][j - 1], board[i][j]
+                    empty_pos = (i, j - 1)
+                elif event.key == pygame.K_UP and i < GRID_SIZE - 1:
+                    board[i][j], board[i + 1][j] = board[i + 1][j], board[i][j]
+                    empty_pos = (i + 1, j)
+                elif event.key == pygame.K_DOWN and i > 0:
+                    board[i][j], board[i - 1][j] = board[i - 1][j], board[i][j]
+                    empty_pos = (i - 1, j)
+        
+        draw_board(board)
+        
+        if is_solved(board):
+            print("Puzzle Solved!")
+            run = False
+        
+        clock.tick(30)
+    
+    pygame.quit()
+
+if __name__ == "__main__":
+    game_loop()
